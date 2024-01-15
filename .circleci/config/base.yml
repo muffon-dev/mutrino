@@ -357,6 +357,7 @@ step-setup-rbe-for-build: &step-setup-rbe-for-build
       $HELPER login
       echo 'export RBE_service='`node -e "console.log(require('./src/utils/reclient.js').serviceAddress)"` >> $BASH_ENV
       echo 'export RBE_experimental_credentials_helper='`node -e "console.log(require('./src/utils/reclient.js').helperPath)"` >> $BASH_ENV
+      echo 'export RBE_experimental_credentials_helper_args="print"' >> $BASH_ENV
 
 step-restore-brew-cache: &step-restore-brew-cache
   restore_cache:
@@ -1631,6 +1632,9 @@ commands:
               echo "Piping output to ASAN_SYMBOLIZE ($ASAN_SYMBOLIZE)"
               (cd electron && (circleci tests glob "spec/*-spec.ts" | xargs -I@ -P4 bash -c "echo $(pwd)/@" | circleci tests run --command="xargs node script/yarn test --runners=main --trace-uncaught --enable-logging --files" --split-by=timings 2>&1)) | $ASAN_SYMBOLIZE
             else
+              if [ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]; then
+                export ELECTRON_SKIP_NATIVE_MODULE_TESTS=true
+              fi
               if [ "$TARGET_ARCH" == "ia32" ]; then
                 npm_config_arch=x64 node electron/node_modules/dugite/script/download-git.js
               fi
